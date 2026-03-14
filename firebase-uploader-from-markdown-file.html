@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Markdown to Firebase Parser</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161d;
+      --surface2: #1a1e28;
+      --border: #252b38;
+      --accent: #f97316;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --success: #22d3ee;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      width: 100%;
+      min-height: 300px;
+      resize: vertical;
+      outline: none;
+      line-height: 1.6;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 12px;
+    }
+
+    .btn:hover { filter: brightness(1.15); }
+
+    .results {
+      margin-top: 24px;
+    }
+
+    .collection-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .collection-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .collection-name {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .doc-count {
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .document {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .doc-id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--success);
+      margin-bottom: 8px;
+    }
+
+    .field {
+      font-size: 12px;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .field-label {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .field-value {
+      color: var(--text);
+      margin-left: 8px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 24px;
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .info {
+      background: rgba(34,211,238,0.1);
+      border: 1px solid rgba(34,211,238,0.3);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--success);
+      margin-top: 12px;
+    }
+
+    .error {
+      background: rgba(244,63,94,0.1);
+      border: 1px solid rgba(244,63,94,0.3);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 13px;
+      color: #f43f5e;
+      margin-top: 12px;
+    }
+
+    code {
+      background: var(--surface2);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📊 Markdown to Firebase Uploader</h1>
+  <div class="subtitle">Paste your markdown table and upload directly to Firebase</div>
+
+  <!-- Firebase Config -->
+  <div class="card">
+    <div class="section-title">Firebase Configuration</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">API KEY</label>
+        <input type="text" id="apiKey" placeholder="AIzaSy..." style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">PROJECT ID</label>
+        <input type="text" id="projectId" placeholder="your-project-id" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+      </div>
+    </div>
+    <button class="btn" onclick="connectFirebase()" style="width:auto;">⚡ Connect to Firebase</button>
+    <div id="connectStatus"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Input Markdown</div>
+    <textarea id="markdownInput" placeholder="Paste your markdown here..."></textarea>
+    <button class="btn" onclick="parseMarkdown()">Parse & Preview</button>
+    <div id="parseStatus"></div>
+  </div>
+
+  <div id="resultsSection" style="display:none;">
+    <div class="card">
+      <div class="section-title">Parsed Structure</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-val" id="collCount">0</div>
+          <div class="stat-lbl">Collections</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="docCount">0</div>
+          <div class="stat-lbl">Documents</div>
+        </div>
+      </div>
+      <div class="info">
+        This structure is ready to be copied into your Firebase uploader. Each section becomes a collection, each workshop row becomes a document.
+      </div>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <div class="card">
+      <div class="section-title">Upload to Firebase</div>
+      <button class="btn" onclick="uploadToFirebase()" id="uploadBtn" disabled>🚀 Upload All Data to Firebase</button>
+      <div id="uploadStatus"></div>
+      <div id="uploadProgress" style="display:none;margin-top:12px;">
+        <div style="background:var(--border);height:6px;border-radius:3px;overflow:hidden;">
+          <div id="progressBar" style="background:var(--accent);height:100%;width:0%;transition:width 0.3s;"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:6px;" id="progressText"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:600px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);">Edit Document</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Collection: <span id="editCollName" style="color:var(--accent);"></span></div>
+      </div>
+    </div>
+    <div style="padding:24px;overflow-y:auto;flex:1;">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">DOCUMENT ID</label>
+          <input type="text" id="editId" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">DURATION (HOURS)</label>
+          <input type="number" id="editDuration" step="0.5" min="0" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">PRICE (₹)</label>
+          <input type="number" id="editPrice" step="100" min="0" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">DESCRIPTION</label>
+          <textarea id="editDescription" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;min-height:100px;resize:vertical;font-family:var(--font-body);"></textarea>
+        </div>
+      </div>
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:12px;justify-content:flex-end;">
+      <button onclick="closeEditModal()" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-family:var(--font-mono);font-size:11px;cursor:pointer;">Cancel</button>
+      <button onclick="saveEdit()" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:8px 16px;font-family:var(--font-mono);font-size:11px;font-weight:700;cursor:pointer;">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  window._firebase = { initializeApp, getFirestore, collection, doc, setDoc };
+</script>
+
+<script>
+  let parsedData = {};
+  let db = null;
+  let isConnected = false;
+
+  async function connectFirebase() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const projectId = document.getElementById('projectId').value.trim();
+    const status = document.getElementById('connectStatus');
+
+    if (!apiKey || !projectId) {
+      status.innerHTML = '<div class="error">Please enter both API Key and Project ID</div>';
+      return;
+    }
+
+    try {
+      const config = {
+        apiKey: apiKey,
+        authDomain: `${projectId}.firebaseapp.com`,
+        projectId: projectId,
+      };
+
+      const fb = window._firebase;
+      if (!fb) {
+        status.innerHTML = '<div class="error">Firebase SDK not loaded yet, please wait and try again</div>';
+        return;
+      }
+
+      const app = fb.initializeApp(config);
+      db = fb.getFirestore(app);
+      isConnected = true;
+
+      status.innerHTML = '<div class="info">✓ Connected to Firebase successfully!</div>';
+      
+      // Enable upload button if data is parsed
+      if (Object.keys(parsedData).length > 0) {
+        document.getElementById('uploadBtn').disabled = false;
+      }
+    } catch(e) {
+      status.innerHTML = `<div class="error">Connection failed: ${e.message}</div>`;
+      isConnected = false;
+    }
+  }
+
+  async function uploadToFirebase() {
+    if (!isConnected || !db) {
+      document.getElementById('uploadStatus').innerHTML = '<div class="error">Please connect to Firebase first</div>';
+      return;
+    }
+
+    if (!parsedData || Object.keys(parsedData).length === 0) {
+      document.getElementById('uploadStatus').innerHTML = '<div class="error">No data to upload. Please parse markdown first.</div>';
+      return;
+    }
+
+    const btn = document.getElementById('uploadBtn');
+    const status = document.getElementById('uploadStatus');
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Uploading...';
+    progressDiv.style.display = 'block';
+
+    const fb = window._firebase;
+    let totalDocs = 0;
+    let uploaded = 0;
+    let errors = 0;
+
+    // Calculate total documents
+    for (const coll of Object.values(parsedData)) {
+      totalDocs += coll.docs.length;
+    }
+
+    try {
+      for (const [collName, coll] of Object.entries(parsedData)) {
+        for (const docData of coll.docs) {
+          try {
+            const docRef = fb.doc(fb.collection(db, collName), docData.id);
+            
+            await fb.setDoc(docRef, {
+              'duration (hours)': docData['duration (hours)'],
+              'price (₹)': docData['price (₹)'],
+              'description': docData['description']
+            });
+
+            uploaded++;
+            const progress = Math.round((uploaded + errors) / totalDocs * 100);
+            progressBar.style.width = progress + '%';
+            progressText.textContent = `${uploaded + errors} / ${totalDocs} documents (${uploaded} success, ${errors} errors)`;
+          } catch(e) {
+            errors++;
+            console.error(`Failed to upload ${collName}/${docData.id}:`, e);
+          }
+        }
+      }
+
+      btn.textContent = '✓ Upload Complete';
+      status.innerHTML = `<div class="info">✓ Upload complete! ${uploaded} documents uploaded successfully${errors > 0 ? `, ${errors} errors` : ''}</div>`;
+      
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '🚀 Upload All Data to Firebase';
+      }, 3000);
+
+    } catch(e) {
+      status.innerHTML = `<div class="error">Upload failed: ${e.message}</div>`;
+      btn.disabled = false;
+      btn.textContent = '🚀 Upload All Data to Firebase';
+    }
+  }
+
+  window.connectFirebase = connectFirebase;
+  window.uploadToFirebase = uploadToFirebase;
+
+  // Edit/Delete functionality
+  let editingCollection = null;
+  let editingIndex = null;
+
+  window.editDocument = function(collName, docIdx) {
+    editingCollection = collName;
+    editingIndex = docIdx;
+    
+    const doc = parsedData[collName].docs[docIdx];
+    
+    document.getElementById('editCollName').textContent = collName;
+    document.getElementById('editId').value = doc.id;
+    document.getElementById('editDuration').value = doc['duration (hours)'];
+    document.getElementById('editPrice').value = doc['price (₹)'];
+    document.getElementById('editDescription').value = doc['description'];
+    
+    document.getElementById('editModal').style.display = 'flex';
+  };
+
+  window.closeEditModal = function() {
+    document.getElementById('editModal').style.display = 'none';
+    editingCollection = null;
+    editingIndex = null;
+  };
+
+  window.saveEdit = function() {
+    if (editingCollection === null || editingIndex === null) return;
+    
+    const newId = document.getElementById('editId').value.trim();
+    const newDuration = parseFloat(document.getElementById('editDuration').value) || 0;
+    const newPrice = parseFloat(document.getElementById('editPrice').value) || 0;
+    const newDescription = document.getElementById('editDescription').value.trim();
+    
+    if (!newId) {
+      alert('Document ID cannot be empty');
+      return;
+    }
+    
+    // Update the document
+    parsedData[editingCollection].docs[editingIndex] = {
+      id: newId,
+      'duration (hours)': newDuration,
+      'price (₹)': newPrice,
+      'description': newDescription
+    };
+    
+    // Refresh display
+    displayResults();
+    closeEditModal();
+  };
+
+  window.deleteDocument = function(collName, docIdx) {
+    if (!confirm(`Delete this document?\n\nID: ${parsedData[collName].docs[docIdx].id}`)) {
+      return;
+    }
+    
+    parsedData[collName].docs.splice(docIdx, 1);
+    
+    // If collection is now empty, remove it
+    if (parsedData[collName].docs.length === 0) {
+      delete parsedData[collName];
+    }
+    
+    displayResults();
+  };
+
+
+  function parseMarkdown() {
+    const input = document.getElementById('markdownInput').value;
+    const status = document.getElementById('parseStatus');
+    
+    if (!input.trim()) {
+      status.innerHTML = '<div class="error">Please paste some markdown content</div>';
+      return;
+    }
+
+    try {
+      parsedData = {};
+      const lines = input.split('\n');
+      let currentCollection = null;
+      let inTable = false;
+      let tableHeaders = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Detect section headers (collection names)
+        if (line.startsWith('# ') || line.startsWith('## ')) {
+          const headerText = line.replace(/^#+\s*/, '').trim();
+          // Extract main title without emojis and subtitle
+          const match = headerText.match(/(?:🔧\s*)?SECTION\s*\d+:\s*(.+?)(?:\s*##.*)?$/i);
+          if (match) {
+            currentCollection = match[1].trim();
+            parsedData[currentCollection] = {
+              fields: [
+                { name: 'duration (hours)', type: 'number' },
+                { name: 'price (₹)', type: 'number' },
+                { name: 'description', type: 'string' }
+              ],
+              docs: []
+            };
+          }
+          inTable = false;
+          continue;
+        }
+
+        // Detect subsection headers (also potential collection names)
+        if (line.startsWith('### ')) {
+          const headerText = line.replace(/^###\s*/, '').trim();
+          // Remove emojis and extra text
+          const cleanHeader = headerText.replace(/[🏢💼🎨]/g, '').trim();
+          currentCollection = cleanHeader;
+          parsedData[currentCollection] = {
+            fields: [
+              { name: 'duration (hours)', type: 'number' },
+              { name: 'price (₹)', type: 'number' },
+              { name: 'description', type: 'string' }
+            ],
+            docs: []
+          };
+          inTable = false;
+          continue;
+        }
+
+        // Detect table headers
+        if (line.startsWith('|') && line.includes('Workshop')) {
+          tableHeaders = line.split('|').map(h => h.trim()).filter(h => h);
+          inTable = true;
+          continue;
+        }
+
+        // Skip separator rows
+        if (line.startsWith('|') && line.includes('---')) {
+          continue;
+        }
+
+        // Parse table rows
+        if (inTable && line.startsWith('|') && currentCollection) {
+          const cells = line.split('|').map(c => c.trim()).filter(c => c);
+          
+          if (cells.length >= 4) {
+            const workshop = cells[0].replace(/\*\*/g, '').trim(); // Remove markdown bold
+            const durationText = cells[1].trim();
+            const priceText = cells[2].trim();
+            const description = cells[3].trim();
+
+            // Extract numeric duration (e.g., "8 hours (1 day)" -> 8)
+            const durationMatch = durationText.match(/(\d+(?:\.\d+)?)\s*hours?/i);
+            const duration = durationMatch ? parseFloat(durationMatch[1]) : 0;
+
+            // Extract numeric price (e.g., "₹5,500 + GST" -> 5500)
+            const priceMatch = priceText.match(/₹?\s*([0-9,]+)/);
+            const price = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : 0;
+
+            // Convert workshop name to document ID format
+            const docId = workshop
+              .toLowerCase()
+              .replace(/[&()]/g, '')
+              .replace(/\s+/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '');
+
+            parsedData[currentCollection].docs.push({
+              id: docId,
+              'duration (hours)': duration,
+              'price (₹)': price,
+              'description': description
+            });
+          }
+        }
+      }
+
+      // Display results
+      displayResults();
+      status.innerHTML = '<div class="info">✓ Parsed successfully!</div>';
+      document.getElementById('resultsSection').style.display = 'block';
+      
+      // Enable upload button if connected to Firebase
+      if (isConnected) {
+        document.getElementById('uploadBtn').disabled = false;
+      }
+
+    } catch(e) {
+      status.innerHTML = `<div class="error">Parse error: ${e.message}</div>`;
+    }
+  }
+
+  function displayResults() {
+    const resultsDiv = document.getElementById('results');
+    const collCount = Object.keys(parsedData).length;
+    const docCount = Object.values(parsedData).reduce((sum, coll) => sum + coll.docs.length, 0);
+
+    document.getElementById('collCount').textContent = collCount;
+    document.getElementById('docCount').textContent = docCount;
+
+    let html = '';
+    for (const [collName, coll] of Object.entries(parsedData)) {
+      html += `
+        <div class="collection-card">
+          <div class="collection-header">
+            <div class="collection-name">${escapeHtml(collName)}</div>
+            <div class="doc-count">${coll.docs.length} documents</div>
+          </div>
+      `;
+
+      coll.docs.forEach((doc, docIdx) => {
+        html += `
+          <div class="document" id="doc-${collName.replace(/[^a-z0-9]/gi, '_')}-${docIdx}">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+              <div class="doc-id">📄 ${escapeHtml(doc.id)}</div>
+              <div style="display:flex;gap:6px;">
+                <button onclick="editDocument('${escapeHtml(collName)}', ${docIdx})" 
+                  style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:var(--font-mono);">
+                  ✏️ Edit
+                </button>
+                <button onclick="deleteDocument('${escapeHtml(collName)}', ${docIdx})" 
+                  style="background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);color:#f43f5e;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:var(--font-mono);">
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="field-label">duration (hours):</span>
+              <span class="field-value">${escapeHtml(String(doc['duration (hours)']))}</span>
+            </div>
+            <div class="field">
+              <span class="field-label">price (₹):</span>
+              <span class="field-value">${escapeHtml(String(doc['price (₹)']))}</span>
+            </div>
+            <div class="field">
+              <span class="field-label">description:</span>
+              <span class="field-value">${escapeHtml(doc['description'])}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    }
+
+    resultsDiv.innerHTML = html;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  window.parseMarkdown = parseMarkdown;
+</script>
+</body>
+</html>

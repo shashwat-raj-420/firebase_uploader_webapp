@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Firebase Data Viewer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161d;
+      --border: #252b38;
+      --accent: #f97316;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --success: #22d3ee;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      letter-spacing: 1px;
+      margin-bottom: 32px;
+      color: var(--accent);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+
+    input, select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      width: 100%;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn:hover { filter: brightness(1.15); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .result {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 16px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .field-row {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .field-name {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .field-value {
+      font-size: 14px;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      line-height: 1.6;
+    }
+
+    .field-type {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+
+    .error {
+      color: #f43f5e;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+      text-align: center;
+      padding: 40px;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔍 Firebase Data Viewer</h1>
+
+  <!-- Firebase Config -->
+  <div class="card">
+    <div class="section-title">Firebase Configuration</div>
+    <div class="input-group">
+      <label>API Key</label>
+      <input type="text" id="apiKey" placeholder="AIzaSy..." />
+    </div>
+    <div class="input-group">
+      <label>Project ID</label>
+      <input type="text" id="projectId" placeholder="your-project-id" />
+    </div>
+    <button class="btn" onclick="connectFirebase()">Connect to Firebase</button>
+    <div id="connectStatus"></div>
+  </div>
+
+  <!-- Query Section -->
+  <div class="card" id="querySection" style="display:none;">
+    <div class="section-title">Retrieve Document</div>
+    <div class="input-group">
+      <label>Collection Name</label>
+      <input type="text" id="collectionName" placeholder="e.g. courses" />
+    </div>
+    <div class="input-group">
+      <label>Document ID</label>
+      <input type="text" id="documentId" placeholder="e.g. basic_plan" />
+    </div>
+    <button class="btn" onclick="fetchDocument()">Fetch Document</button>
+    <div id="fetchStatus"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" id="resultsSection" style="display:none;">
+    <div class="section-title">Document Data</div>
+    <div class="result" id="results"></div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  window._firebase = { initializeApp, getFirestore, doc, getDoc };
+</script>
+
+<script>
+  let db = null;
+
+  async function connectFirebase() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const projectId = document.getElementById('projectId').value.trim();
+    const status = document.getElementById('connectStatus');
+
+    if (!apiKey || !projectId) {
+      status.innerHTML = '<div class="error">Please fill in API Key and Project ID</div>';
+      return;
+    }
+
+    try {
+      const config = {
+        apiKey: apiKey,
+        authDomain: `${projectId}.firebaseapp.com`,
+        projectId: projectId,
+      };
+
+      const app = window._firebase.initializeApp(config);
+      db = window._firebase.getFirestore(app);
+
+      status.innerHTML = '<div style="color:var(--success);font-size:13px;margin-top:8px;">✓ Connected successfully!</div>';
+      document.getElementById('querySection').style.display = 'block';
+    } catch(e) {
+      status.innerHTML = `<div class="error">Connection failed: ${e.message}</div>`;
+    }
+  }
+
+  async function fetchDocument() {
+    const collectionName = document.getElementById('collectionName').value.trim();
+    const documentId = document.getElementById('documentId').value.trim();
+    const status = document.getElementById('fetchStatus');
+    const resultsDiv = document.getElementById('results');
+
+    if (!collectionName || !documentId) {
+      status.innerHTML = '<div class="error">Please enter both Collection Name and Document ID</div>';
+      return;
+    }
+
+    if (!db) {
+      status.innerHTML = '<div class="error">Please connect to Firebase first</div>';
+      return;
+    }
+
+    try {
+      status.innerHTML = '<div style="color:var(--muted);font-size:13px;margin-top:8px;">⏳ Fetching...</div>';
+      
+      const docRef = window._firebase.doc(db, collectionName, documentId);
+      const docSnap = await window._firebase.getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        displayData(data);
+        status.innerHTML = '<div style="color:var(--success);font-size:13px;margin-top:8px;">✓ Document retrieved!</div>';
+        document.getElementById('resultsSection').style.display = 'block';
+      } else {
+        status.innerHTML = '<div class="error">Document not found</div>';
+        document.getElementById('resultsSection').style.display = 'none';
+      }
+    } catch(e) {
+      status.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+      document.getElementById('resultsSection').style.display = 'none';
+    }
+  }
+
+  function displayData(data) {
+    const resultsDiv = document.getElementById('results');
+    
+    if (!data || Object.keys(data).length === 0) {
+      resultsDiv.innerHTML = '<div class="empty">No fields in this document</div>';
+      return;
+    }
+
+    let html = '';
+    for (const [key, value] of Object.entries(data)) {
+      const type = typeof value;
+      let displayValue = '';
+
+      if (value === null) {
+        displayValue = '<span style="color:var(--muted);">null</span>';
+      } else if (type === 'object') {
+        if (Array.isArray(value)) {
+          displayValue = JSON.stringify(value, null, 2);
+        } else if (value.toDate && typeof value.toDate === 'function') {
+          // Firestore Timestamp
+          displayValue = value.toDate().toLocaleString();
+        } else if (value.latitude !== undefined && value.longitude !== undefined) {
+          // Firestore GeoPoint
+          displayValue = `Lat: ${value.latitude}, Lng: ${value.longitude}`;
+        } else {
+          displayValue = JSON.stringify(value, null, 2);
+        }
+      } else if (type === 'boolean') {
+        displayValue = value ? 'true' : 'false';
+      } else {
+        displayValue = escapeHtml(String(value));
+      }
+
+      html += `
+        <div class="field-row">
+          <div class="field-name">
+            ${escapeHtml(key)}
+            <span class="field-type">(${getTypeLabel(value)})</span>
+          </div>
+          <div class="field-value">${displayValue}</div>
+        </div>
+      `;
+    }
+
+    resultsDiv.innerHTML = html;
+  }
+
+  function getTypeLabel(value) {
+    if (value === null) return 'null';
+    if (typeof value === 'boolean') return 'boolean';
+    if (typeof value === 'number') return 'number';
+    if (typeof value === 'string') return 'string';
+    if (Array.isArray(value)) return 'array';
+    if (value.toDate && typeof value.toDate === 'function') return 'timestamp';
+    if (value.latitude !== undefined && value.longitude !== undefined) return 'geopoint';
+    if (typeof value === 'object') return 'map';
+    return 'unknown';
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  window.connectFirebase = connectFirebase;
+  window.fetchDocument = fetchDocument;
+</script>
+</body>
+</html>

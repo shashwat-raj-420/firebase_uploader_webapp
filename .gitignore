@@ -1,2 +1,6 @@
 .venv
 serviceAccountKey.json
+data mover/node_modules
+data mover/.env.source
+data mover/.env.target
+*.DS_Store
